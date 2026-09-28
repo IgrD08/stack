@@ -10,7 +10,7 @@ int main()
 
     printMenu(&stk1);
 
-    //TODO - наладить возвращаемое значение
+//     free(&stk1); //TODO - сделать функцию stackDestroy()
 
     return 0;
 }

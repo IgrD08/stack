@@ -1,11 +1,14 @@
 #include "stack.h"
 
-int stackInit(struc_t *stk, size_t initialCapacity
+error stackInit(struc_t *stk, size_t initialCapacity
               ON_DBG(,const char *functionNameRet, const char *fileNameRet, int lineNumber))
 {
-    //TODO - проверка нулевая ли структура
+     if (stk == NULL)
+        return INCORRECT_POINTER;
 
     stk->data = (structEnum_t*)calloc(initialCapacity, sizeof(structEnum_t));
+
+    STACK_VERIFY(stk, ALLOCATION_CHECK);
 
     stk->capacity = initialCapacity;
 
@@ -13,57 +16,120 @@ int stackInit(struc_t *stk, size_t initialCapacity
         stk->functionName = functionNameRet;
         stk->fileName = fileNameRet;
         stk->line = lineNumber;
+        STACK_VERIFY(stk, INITIALIZATION_CHECK);
     #endif
 
-    return 0;
+    return CORRECT;
 }
 
-void stackVerify(struc_t *stk)
+error stackPush(struc_t *stk, structEnum_t value)
 {
-    if (isnan(stk)) 
+    STACK_VERIFY(stk, ALLOCATION_CHECK);
 
-
-
-
-    return;
-}
-
-size_t stackPush(struc_t *stk, structEnum_t value)
-{
     if (stk->size >= stk->capacity)
     {
         recalloc(stk, stk->capacity * 2);
     }
 
+    STACK_VERIFY(stk, ALLOCATION_CHECK);
+
     (stk->data)[(stk->size)++] = value;
 
-    return stk->size;
+    return CORRECT;
 }
 
 structEnum_t stackPop(struc_t *stk)
 {
+    STACK_VERIFY(stk, ALLOCATION_CHECK);
+    STACK_VERIFY(stk, IS_POP_POSSIBLE);
+
     structEnum_t value = (stk->data)[stk->size];
     stk->data[--(stk->size)] = 0;
 
-    if (stk->size * 2 <= stk->capacity)
+    if (stk->size * 4 <= stk->capacity)
     {
         recalloc(stk, stk->capacity / 2);
     }
 
     return value;
 }
+//TODO - проверка value является ли он NAN
 
-void recalloc(struc_t *stk, size_t newCapacity)
+error stackVerify(struc_t *stk, check flag)
 {
+    if (stk == NULL)
+    {
+        return INCORRECT_POINTER;
+    }
+
+    if (flag == ZERO_STACK_CHECK)
+    {
+        if (stk->data == NULL)
+        {
+            return ALLOCATION_ERROR;
+        }
+
+        int poisonFlag = 0;
+        for (size_t i = 0; i < stk->capacity; i++)
+        {
+            if (!compareWithZero(stk->data[i]))
+            {
+                poisonFlag = 1;
+                break;
+            }
+        }
+        printf("5\n");
+        if (stk->size > stk->capacity || poisonFlag)
+        {
+            return ZERO_STACK;
+        }
+        else
+            return CORRECT;
+    }
+    else if (flag == ALLOCATION_CHECK)
+    {
+        if(stk->data == NULL)
+        {
+            return ALLOCATION_ERROR;
+        }
+        else
+            return CORRECT;
+    }
+    #ifdef STACK_DEBUG
+        else if (flag == INITIALIZATION_CHECK)
+        {
+            if (stk->functionName == NULL || stk->fileName == NULL)
+            {
+                return INITIALIZATION_ERROR;
+            }
+            else
+                return CORRECT;
+        }
+    #endif
+    else if (flag == IS_POP_POSSIBLE)
+    {
+        if (stk->size <= 0 || stk->capacity < stk->size || stk->capacity <= 0)
+            return POP_NOT_POSSIBLE;
+        else
+            return CORRECT;
+    }
+    else
+        return INCORRECT_FLAG;
+}
+
+error recalloc(struc_t *stk, size_t newCapacity)
+{
+    STACK_VERIFY(stk, ALLOCATION_CHECK);
+
     if (newCapacity == 0) newCapacity = 1;
 
     structEnum_t *newStk = (structEnum_t*)realloc(stk->data, newCapacity * sizeof(structEnum_t));
 
+    //STACK_VERIFY(newStk, NOTHING); //TODO - будет вылетать с некорректным флагом
+
     if (newStk == NULL)
     {
-        stk->errorEnum = ALLOCATION_ERROR;
-
-        return;
+        return ALLOCATION_ERROR;
     }
 
     if (newCapacity > stk->capacity)
@@ -77,11 +143,13 @@ void recalloc(struc_t *stk, size_t newCapacity)
     stk->capacity = newCapacity;
     stk->data = newStk;
 
-    return;
-}//TODO - доделать recalloc: добавить прыжок
+    return CORRECT;
+}
 
-void stackDump(struc_t *stk)
+error stackDump(struc_t *stk)
 {
+    STACK_VERIFY(stk, ALLOCATION_CHECK);
+
     #ifdef STACK_DEBUG
         printf("\033[32mstack \"stk1\" [0x%p] created by %s() %s :%d\n{\n",
                stk->data, stk->functionName, stk->fileName, stk->line);
@@ -101,10 +169,14 @@ void stackDump(struc_t *stk)
     printf("       }\n");
 
     printf("}\033[0m\n");
+
+    return CORRECT;
 }
 
-void printMenu(struc_t *stk)
+error printMenu(struc_t *stk)
 {
+    STACK_VERIFY(stk, ALLOCATION_CHECK);
+
     bool flag = 1;
     int callNumber = 0;
 
@@ -124,7 +196,8 @@ void printMenu(struc_t *stk)
                 {
                     structEnum_t valueToPush = 0;
 
-                    if(scanf(SPEC, &valueToPush) != 1) break;
+                    if(scanf(SPEC, &valueToPush) != 1)
+                        break;
                     stackPush(stk, valueToPush);
 
                     #ifdef STACK_DEBUG
@@ -132,7 +205,6 @@ void printMenu(struc_t *stk)
                     #endif
                     break;
                 }
-
 
             case 1:
                 printf("Last value = " SPEC "\n", stackPop(stk));
@@ -150,6 +222,8 @@ void printMenu(struc_t *stk)
         }
 
     }while(flag);
+
+    return CORRECT;
 }
 
 bool compareWithZero(structEnum_t value)
