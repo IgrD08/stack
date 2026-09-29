@@ -5,6 +5,8 @@ typedef double structEnum_t;
 if (stackVerify(STK, FLAG))      \
     return INCORRECT_POINTER;    \
 
+#define _POISON NAN
+
 #define STACK_DEBUG
 
 #ifdef STACK_DEBUG
@@ -57,5 +59,5 @@ error stackVerify(struc_t *stk, check flag);
 error recalloc(struc_t *stk, size_t newCapacity);
 error stackDump(struc_t *stk);
 error printMenu(struc_t *stk);
-bool compareWithZero(structEnum_t value);
+bool compareDoubleWithDouble(structEnum_t value);
 error stackDestroy(struc_t *stk);

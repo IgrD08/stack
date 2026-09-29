@@ -6,20 +6,19 @@ error stackInit(struc_t *stk, size_t initialCapacity
      if (stk == NULL)
         return INCORRECT_POINTER;
 
-    stk->data = (structEnum_t*)calloc(initialCapacity, sizeof(structEnum_t));
-
-    STACK_VERIFY(stk, ALLOCATION_CHECK);
-
-    stk->capacity = initialCapacity;
-
-    STACK_VERIFY(stk, ZERO_STACK_CHECK);
-
     #ifdef STACK_DEBUG
         stk->functionName = functionNameRet;
         stk->fileName = fileNameRet;
         stk->line = lineNumber;
         STACK_VERIFY(stk, INITIALIZATION_CHECK);
     #endif
+
+    stk->data = (structEnum_t*)calloc(initialCapacity, sizeof(structEnum_t));
+
+    STACK_VERIFY(stk, ZERO_STACK_CHECK);
+    STACK_VERIFY(stk, ALLOCATION_CHECK);
+
+    stk->capacity = initialCapacity;
 
     return CORRECT;
 }
@@ -45,12 +44,12 @@ structEnum_t stackPop(struc_t *stk)
     if (stackVerify(stk, ALLOCATION_CHECK) != CORRECT ||
         stackVerify(stk, IS_POP_POSSIBLE) != CORRECT)
     {
-        return 0;//TODO - return Poison
+        return _POISON;
     }
 
     stk->size--;
     structEnum_t value = (stk->data)[stk->size];
-    stk->data[stk->size] = 0;
+    stk->data[stk->size] = _POISON;
 
     if (stk->size * 4 <= stk->capacity)
     {
@@ -81,13 +80,13 @@ error stackVerify(struc_t *stk, check flag)
         int poisonFlag = 0;
         for (size_t i = 0; i < stk->capacity; i++)
         {
-            if (!compareWithZero(stk->data[i]))
+            if (!compareDoubleWithDouble(stk->data[i]))
             {
                 poisonFlag = 1;
                 break;
             }
         }
-        if (stk->size == 0, stk->capacity == 0 || poisonFlag)
+        if (stk->size == 0 || stk->capacity == 0 || poisonFlag)
         {
             printf("The stack was created incorrectly\n");
 
@@ -110,7 +109,7 @@ error stackVerify(struc_t *stk, check flag)
     #ifdef STACK_DEBUG
         else if (flag == INITIALIZATION_CHECK)
         {
-            if (stk->functionName == NULL || stk->fileName == NULL)
+            if (stk->functionName == NULL || stk->fileName == NULL || stk->line <= 0)
             {
                 printf("Initialization did not complete correctly\n");
 
@@ -152,7 +151,7 @@ error recalloc(struc_t *stk, size_t newCapacity)
     {
         for (size_t i = stk->capacity; i < newCapacity; i++)
         {
-            newStk[i] = 0;
+            newStk[i] = _POISON;
         }
     }
 
@@ -179,7 +178,7 @@ error stackDump(struc_t *stk)
         if (i < stk->size) printf("            *[%u] = " SPEC, i, stk->data[i]);
         else printf("             [%u] = " SPEC, i, stk->data[i]);
 
-        if (compareWithZero(stk->data[i])) printf(" \033[33m(POISON)\033[32m\n");
+        if (compareDoubleWithDouble(stk->data[i])) printf(" \033[33m(POISON)\033[32m\n");
         else printf("\n");
     }
     printf("       }\n");
@@ -246,9 +245,20 @@ error printMenu(struc_t *stk)
     return CORRECT;
 }
 
-bool compareWithZero(structEnum_t value)
+bool compareDoubleWithDouble(structEnum_t value)
 {
-    if (fabs(value) < EPS) return 1;
+    if (isnan(_POISON))
+    {
+        if (isnan(value))
+            return 1;
+        else
+            return 0;
+    }
+    else
+    {
+        if (fabs(value - _POISON) < EPS)
+            return 1;
+    }
 
     return 0;
 }
@@ -259,7 +269,7 @@ error stackDestroy(struc_t *stk)
 
     for (size_t i = 0; i < stk->capacity; i++)
     {
-        stk->data[i] = 0; //TODO - poison
+        stk->data[i] = _POISON;
     }
 
     free(stk->data);
