@@ -12,6 +12,8 @@ error stackInit(struc_t *stk, size_t initialCapacity
 
     stk->capacity = initialCapacity;
 
+    STACK_VERIFY(stk, ZERO_STACK_CHECK);
+
     #ifdef STACK_DEBUG
         stk->functionName = functionNameRet;
         stk->fileName = fileNameRet;
@@ -40,11 +42,15 @@ error stackPush(struc_t *stk, structEnum_t value)
 
 structEnum_t stackPop(struc_t *stk)
 {
-    STACK_VERIFY(stk, ALLOCATION_CHECK);
-    STACK_VERIFY(stk, IS_POP_POSSIBLE);
+    if (stackVerify(stk, ALLOCATION_CHECK) != CORRECT ||
+        stackVerify(stk, IS_POP_POSSIBLE) != CORRECT)
+    {
+        return 0;//TODO - return Poison
+    }
 
+    stk->size--;
     structEnum_t value = (stk->data)[stk->size];
-    stk->data[--(stk->size)] = 0;
+    stk->data[stk->size] = 0;
 
     if (stk->size * 4 <= stk->capacity)
     {
@@ -53,12 +59,13 @@ structEnum_t stackPop(struc_t *stk)
 
     return value;
 }
-//TODO - проверка value является ли он NAN
 
 error stackVerify(struc_t *stk, check flag)
 {
     if (stk == NULL)
     {
+        printf("A null pointer was passed\n");
+
         return INCORRECT_POINTER;
     }
 
@@ -66,6 +73,8 @@ error stackVerify(struc_t *stk, check flag)
     {
         if (stk->data == NULL)
         {
+            printf("Memory allocation error\n");
+
             return ALLOCATION_ERROR;
         }
 
@@ -78,9 +87,10 @@ error stackVerify(struc_t *stk, check flag)
                 break;
             }
         }
-        printf("5\n");
         if (stk->size > stk->capacity || poisonFlag)
         {
+            printf("The stack was created incorrectly\n");
+
             return ZERO_STACK;
         }
         else
@@ -90,6 +100,8 @@ error stackVerify(struc_t *stk, check flag)
     {
         if(stk->data == NULL)
         {
+            printf("Memory allocation error\n");
+
             return ALLOCATION_ERROR;
         }
         else
@@ -100,6 +112,8 @@ error stackVerify(struc_t *stk, check flag)
         {
             if (stk->functionName == NULL || stk->fileName == NULL)
             {
+                printf("Initialization did not complete correctly\n");
+
                 return INITIALIZATION_ERROR;
             }
             else
@@ -109,7 +123,11 @@ error stackVerify(struc_t *stk, check flag)
     else if (flag == IS_POP_POSSIBLE)
     {
         if (stk->size <= 0 || stk->capacity < stk->size || stk->capacity <= 0)
+        {
+            printf("The function cannot be called\n");
+
             return POP_NOT_POSSIBLE;
+        }
         else
             return CORRECT;
     }
@@ -124,8 +142,6 @@ error recalloc(struc_t *stk, size_t newCapacity)
     if (newCapacity == 0) newCapacity = 1;
 
     structEnum_t *newStk = (structEnum_t*)realloc(stk->data, newCapacity * sizeof(structEnum_t));
-
-    //STACK_VERIFY(newStk, NOTHING); //TODO - будет вылетать с некорректным флагом
 
     if (newStk == NULL)
     {
@@ -188,7 +204,11 @@ error printMenu(struc_t *stk)
                "2 - exit the program\033[0m\n"
               );
 
-        scanf("%d", &callNumber);
+        if (scanf("%d", &callNumber) != 1)
+        {
+            while (getchar() != '\n');
+            continue;
+        }
 
         switch (callNumber)
         {

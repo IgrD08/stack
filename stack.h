@@ -33,7 +33,6 @@ enum error
 
 enum check
 {
-    NOTHING = 0,
     ZERO_STACK_CHECK = -1,
     ALLOCATION_CHECK = -2,
     CHECK_POINTER = -3,
