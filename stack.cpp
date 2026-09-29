@@ -87,7 +87,7 @@ error stackVerify(struc_t *stk, check flag)
                 break;
             }
         }
-        if (stk->size > stk->capacity || poisonFlag)
+        if (stk->size == 0, stk->capacity == 0 || poisonFlag)
         {
             printf("The stack was created incorrectly\n");
 
@@ -251,4 +251,28 @@ bool compareWithZero(structEnum_t value)
     if (fabs(value) < EPS) return 1;
 
     return 0;
+}
+
+error stackDestroy(struc_t *stk)
+{
+    STACK_VERIFY(stk, ALLOCATION_CHECK);
+
+    for (size_t i = 0; i < stk->capacity; i++)
+    {
+        stk->data[i] = 0; //TODO - poison
+    }
+
+    free(stk->data);
+    stk->data = NULL;
+
+    stk->size = 0;
+    stk->capacity = 0;
+
+    #ifdef STACK_DEBUG
+        stk->fileName = 0;
+        stk->functionName = 0;
+        stk->line = 0;
+    #endif
+
+    return CORRECT;
 }

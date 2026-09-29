@@ -58,3 +58,4 @@ error recalloc(struc_t *stk, size_t newCapacity);
 error stackDump(struc_t *stk);
 error printMenu(struc_t *stk);
 bool compareWithZero(structEnum_t value);
+error stackDestroy(struc_t *stk);
