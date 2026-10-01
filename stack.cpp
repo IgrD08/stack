@@ -1,10 +1,9 @@
 #include "stack.h"
 
-error stackInit(struc_t *stk, size_t initialCapacity
+error stackInit(stack_t *stk, size_t initialCapacity
               ON_DBG(,const char *functionNameRet, const char *fileNameRet, int lineNumber))
 {
-     if (stk == NULL)
-        return INCORRECT_POINTER;
+    STACK_VERIFY(stk, POINTER_CHECK);
 
     #ifdef STACK_DEBUG
         stk->functionName = functionNameRet;
@@ -13,22 +12,32 @@ error stackInit(struc_t *stk, size_t initialCapacity
         STACK_VERIFY(stk, INITIALIZATION_CHECK);
     #endif
 
-    stk->data = (structEnum_t*)calloc(initialCapacity, sizeof(structEnum_t));
+    stk->pointer = (structEnum_t*)calloc(initialCapacity + 2, sizeof(structEnum_t));
+    stk->data = &(stk->pointer[1]);
 
     STACK_VERIFY(stk, ZERO_STACK_CHECK);
     STACK_VERIFY(stk, ALLOCATION_CHECK);
 
+    stk->pointer[0] = canary1;
+    stk->pointer[initialCapacity + 1] = canary2;
+
     stk->capacity = initialCapacity;
+
+    for (size_t i = 0; i < initialCapacity; i++)
+    {
+        stk->data[i] = _POISON;
+    }
 
     return CORRECT;
 }
 
-error stackPush(struc_t *stk, structEnum_t value)
+error stackPush(stack_t *stk, structEnum_t value)
 {
-    STACK_VERIFY(stk, ALLOCATION_CHECK);
+    STACK_VERIFY(stk, POINTER_CHECK);
 
     if (stk->size >= stk->capacity)
     {
+        printf("start\n");
         recalloc(stk, stk->capacity * 2);
     }
 
@@ -39,7 +48,7 @@ error stackPush(struc_t *stk, structEnum_t value)
     return CORRECT;
 }
 
-structEnum_t stackPop(struc_t *stk)
+structEnum_t stackPop(stack_t *stk)
 {
     if (stackVerify(stk, ALLOCATION_CHECK) != CORRECT ||
         stackVerify(stk, IS_POP_POSSIBLE) != CORRECT)
@@ -59,111 +68,39 @@ structEnum_t stackPop(struc_t *stk)
     return value;
 }
 
-error stackVerify(struc_t *stk, check flag)
+error recalloc(stack_t *stk, size_t newCapacity)
 {
-    if (stk == NULL)
-    {
-        printf("A null pointer was passed\n");
-
-        return INCORRECT_POINTER;
-    }
-
-    if (flag == ZERO_STACK_CHECK)
-    {
-        if (stk->data == NULL)
-        {
-            printf("Memory allocation error\n");
-
-            return ALLOCATION_ERROR;
-        }
-
-        int poisonFlag = 0;
-        for (size_t i = 0; i < stk->capacity; i++)
-        {
-            if (!compareDoubleWithDouble(stk->data[i]))
-            {
-                poisonFlag = 1;
-                break;
-            }
-        }
-        if (stk->size == 0 || stk->capacity == 0 || poisonFlag)
-        {
-            printf("The stack was created incorrectly\n");
-
-            return ZERO_STACK;
-        }
-        else
-            return CORRECT;
-    }
-    else if (flag == ALLOCATION_CHECK)
-    {
-        if(stk->data == NULL)
-        {
-            printf("Memory allocation error\n");
-
-            return ALLOCATION_ERROR;
-        }
-        else
-            return CORRECT;
-    }
-    #ifdef STACK_DEBUG
-        else if (flag == INITIALIZATION_CHECK)
-        {
-            if (stk->functionName == NULL || stk->fileName == NULL || stk->line <= 0)
-            {
-                printf("Initialization did not complete correctly\n");
-
-                return INITIALIZATION_ERROR;
-            }
-            else
-                return CORRECT;
-        }
-    #endif
-    else if (flag == IS_POP_POSSIBLE)
-    {
-        if (stk->size <= 0 || stk->capacity < stk->size || stk->capacity <= 0)
-        {
-            printf("The function cannot be called\n");
-
-            return POP_NOT_POSSIBLE;
-        }
-        else
-            return CORRECT;
-    }
-    else
-        return INCORRECT_FLAG;
-}
-
-error recalloc(struc_t *stk, size_t newCapacity)
-{
-    STACK_VERIFY(stk, ALLOCATION_CHECK);
+    STACK_VERIFY(stk, POINTER_CHECK);
 
     if (newCapacity == 0) newCapacity = 1;
+    structEnum_t *newStk = (structEnum_t*)realloc(stk->pointer, (newCapacity + 2) * sizeof(structEnum_t));
 
-    structEnum_t *newStk = (structEnum_t*)realloc(stk->data, newCapacity * sizeof(structEnum_t));
-
-    if (newStk == NULL)
+    if (newStk == 0)
     {
         return ALLOCATION_ERROR;
     }
+
+    stk->pointer = newStk;
+    stk->data = &(stk->pointer[1]);
 
     if (newCapacity > stk->capacity)
     {
         for (size_t i = stk->capacity; i < newCapacity; i++)
         {
-            newStk[i] = _POISON;
+            stk->data[i] = _POISON;
         }
     }
 
+    stk->data[newCapacity] = canary2;
+
     stk->capacity = newCapacity;
-    stk->data = newStk;
 
     return CORRECT;
 }
 
-error stackDump(struc_t *stk)
+error stackDump(stack_t *stk)
 {
-    STACK_VERIFY(stk, ALLOCATION_CHECK);
+    STACK_VERIFY(stk, POINTER_CHECK);
 
     #ifdef STACK_DEBUG
         printf("\033[32mstack \"stk1\" [0x%p] created by %s() %s :%d\n{\n",
@@ -188,10 +125,9 @@ error stackDump(struc_t *stk)
     return CORRECT;
 }
 
-error printMenu(struc_t *stk)
+error printMenu(stack_t *stk)
 {
-    STACK_VERIFY(stk, ALLOCATION_CHECK);
-
+    STACK_VERIFY(stk, POINTER_CHECK);
     bool flag = 1;
     int callNumber = 0;
 
@@ -263,9 +199,9 @@ bool compareDoubleWithDouble(structEnum_t value)
     return 0;
 }
 
-error stackDestroy(struc_t *stk)
+error stackDestroy(stack_t *stk)
 {
-    STACK_VERIFY(stk, ALLOCATION_CHECK);
+    STACK_VERIFY(stk, POINTER_CHECK);
 
     for (size_t i = 0; i < stk->capacity; i++)
     {

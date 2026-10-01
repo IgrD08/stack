@@ -22,42 +22,45 @@ if (stackVerify(STK, FLAG))      \
 
 const double EPS = 1e-5;
 
+const structEnum_t canary1 = (const structEnum_t)0xEDA;
+const structEnum_t canary2 = (const structEnum_t)0xBEDA;
+
 enum error
 {
     CORRECT = 0,
-    ZERO_STACK,
-    ALLOCATION_ERROR,
-    INCORRECT_POINTER,
-    INITIALIZATION_ERROR,
-    INCORRECT_FLAG,
-    POP_NOT_POSSIBLE
+    ZERO_STACK = -1,
+    ALLOCATION_ERROR = -2,
+    INCORRECT_POINTER = -3,
+    INITIALIZATION_ERROR = -4,
+    INCORRECT_FLAG = -5,
+    POP_NOT_POSSIBLE = -6
 };
 
 enum check
 {
-    ZERO_STACK_CHECK = -1,
-    ALLOCATION_CHECK = -2,
-    CHECK_POINTER = -3,
-    INITIALIZATION_CHECK = -4,
-    CHECK_FLAG = -5,
-    IS_POP_POSSIBLE = -6
+    ZERO_STACK_CHECK,
+    ALLOCATION_CHECK,
+    INITIALIZATION_CHECK,
+    POINTER_CHECK,
+    IS_POP_POSSIBLE
 };
 
-struct struc_t
+struct stack_t
 {
     structEnum_t *data;
+    structEnum_t *pointer;
     size_t size;
     size_t capacity;
     ON_DBG(const char *functionName; const char *fileName; int line;)
 };
 
-error stackInit(struc_t *stk, size_t initialCapacity
+error stackInit(stack_t *stk, size_t initialCapacity
                 ON_DBG(,const char *functionName, const char *fileName, int line));
-error stackPush(struc_t *stk, double value);
-structEnum_t stackPop(struc_t *stk);
-error stackVerify(struc_t *stk, check flag);
-error recalloc(struc_t *stk, size_t newCapacity);
-error stackDump(struc_t *stk);
-error printMenu(struc_t *stk);
+error stackPush(stack_t *stk, double value);
+structEnum_t stackPop(stack_t *stk);
+error stackVerify(stack_t *stk, check flag);
+error recalloc(stack_t *stk, size_t newCapacity);
+error stackDump(stack_t *stk);
+error printMenu(stack_t *stk);
 bool compareDoubleWithDouble(structEnum_t value);
-error stackDestroy(struc_t *stk);
+error stackDestroy(stack_t *stk);
