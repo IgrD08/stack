@@ -3,29 +3,41 @@
 error stackInit(stack_t *stk, size_t initialCapacity
               ON_DBG(,const char *functionNameRet, const char *fileNameRet, int lineNumber))
 {
-    STACK_VERIFY(stk, POINTER_CHECK);
+    if (stk == NULL)
+    {
+        return INCORRECT_POINTER;
+    }
+
+    if (MAX - initialCapacity < initialCapacity / 2)
+    {
+        return INITIALIZATION_ERROR;
+    }
 
     #ifdef STACK_DEBUG
         stk->functionName = functionNameRet;
         stk->fileName = fileNameRet;
         stk->line = lineNumber;
-        STACK_VERIFY(stk, INITIALIZATION_CHECK);
+        printStackVerify(stk, stackVerify(stk, FILE_INFO_CHECK));
     #endif
 
     stk->pointer = (structEnum_t*)calloc(initialCapacity + 2, sizeof(structEnum_t));
+
+    printStackVerify(stk, stackVerify(stk, ALLOCATION_CHECK));
+
     stk->data = &(stk->pointer[1]);
 
-    STACK_VERIFY(stk, ZERO_STACK_CHECK);
-    STACK_VERIFY(stk, ALLOCATION_CHECK);
+    printStackVerify(stk, stackVerify(stk, ZERO_STACK_CHECK));
 
     stk->pointer[0] = canary1;
     stk->pointer[initialCapacity + 1] = canary2;
+    stk->stuctCanary1 = canary3;
+    stk->stuctCanary2 = canary4;
 
     stk->capacity = initialCapacity;
 
     for (size_t i = 0; i < initialCapacity; i++)
     {
-        stk->data[i] = _POISON;
+        stk->data[i] = poison;
     }
 
     return CORRECT;
@@ -33,15 +45,14 @@ error stackInit(stack_t *stk, size_t initialCapacity
 
 error stackPush(stack_t *stk, structEnum_t value)
 {
-    STACK_VERIFY(stk, POINTER_CHECK);
+    printStackVerify(stk, stackVerify(stk, ESSENTIAL_CHECK));
 
     if (stk->size >= stk->capacity)
     {
-        printf("start\n");
         recalloc(stk, stk->capacity * 2);
     }
 
-    STACK_VERIFY(stk, ALLOCATION_CHECK);
+    printStackVerify(stk, stackVerify(stk, ALLOCATION_CHECK));
 
     (stk->data)[(stk->size)++] = value;
 
@@ -49,16 +60,16 @@ error stackPush(stack_t *stk, structEnum_t value)
 }
 
 structEnum_t stackPop(stack_t *stk)
-{
+{//TODO - printStackVerify
     if (stackVerify(stk, ALLOCATION_CHECK) != CORRECT ||
         stackVerify(stk, IS_POP_POSSIBLE) != CORRECT)
     {
-        return _POISON;
+        return poison;
     }
 
     stk->size--;
     structEnum_t value = (stk->data)[stk->size];
-    stk->data[stk->size] = _POISON;
+    stk->data[stk->size] = poison;
 
     if (stk->size * 4 <= stk->capacity)
     {
@@ -70,24 +81,22 @@ structEnum_t stackPop(stack_t *stk)
 
 error recalloc(stack_t *stk, size_t newCapacity)
 {
-    STACK_VERIFY(stk, POINTER_CHECK);
+    printStackVerify(stk, stackVerify(stk, ESSENTIAL_CHECK));
 
     if (newCapacity == 0) newCapacity = 1;
     structEnum_t *newStk = (structEnum_t*)realloc(stk->pointer, (newCapacity + 2) * sizeof(structEnum_t));
 
-    if (newStk == 0)
-    {
-        return ALLOCATION_ERROR;
-    }
-
     stk->pointer = newStk;
+
+    printStackVerify(stk, stackVerify(stk, ALLOCATION_CHECK));
+
     stk->data = &(stk->pointer[1]);
 
     if (newCapacity > stk->capacity)
     {
         for (size_t i = stk->capacity; i < newCapacity; i++)
         {
-            stk->data[i] = _POISON;
+            stk->data[i] = poison;
         }
     }
 
@@ -98,101 +107,44 @@ error recalloc(stack_t *stk, size_t newCapacity)
     return CORRECT;
 }
 
-error stackDump(stack_t *stk)
+error stackDump(stack_t *stk, FILE *fp)
 {
-    STACK_VERIFY(stk, POINTER_CHECK);
 
     #ifdef STACK_DEBUG
-        printf("\033[32mstack \"stk1\" [0x%p] created by %s() %s :%d\n{\n",
+        fprintf(fp, "stack \"stk1\" [0x%p] created by %s() %s :%d\n{\n",
                stk->data, stk->functionName, stk->fileName, stk->line);
     #endif
 
-    printf("    capacity = %d\n    size = %d\n    data = [0x%p]\n       {\n",
+    fprintf(fp, "    capacity = %d\n    size = %d\n    data = [0x%p]\n       {\n",
            stk->capacity, stk->size, stk->data);
 
     for (size_t i = 0; i < stk->capacity; i++)
     {
-        if (i < stk->size) printf("            *[%u] = " SPEC, i, stk->data[i]);
-        else printf("             [%u] = " SPEC, i, stk->data[i]);
+        if (i < stk->size) fprintf(fp, "            *[%u] = " SPEC, i, stk->data[i]);
+        else fprintf(fp, "             [%u] = " SPEC, i, stk->data[i]);
 
-        if (compareDoubleWithDouble(stk->data[i])) printf(" \033[33m(POISON)\033[32m\n");
-        else printf("\n");
+        if (compareDoubleWithDouble(stk->data[i], poison)) printf(" (POISON)\n");
+        else fprintf(fp, "\n");
     }
-    printf("       }\n");
+    fprintf(fp, "       }\n");
 
-    printf("}\033[0m\n");
-
-    return CORRECT;
-}
-
-error printMenu(stack_t *stk)
-{
-    STACK_VERIFY(stk, POINTER_CHECK);
-    bool flag = 1;
-    int callNumber = 0;
-
-    do
-    {
-        printf("\033[34mEnter a number from 0 to 2.\n"
-               "0 - push a value\n"
-               "1 - return the last value\n"
-               "2 - exit the program\033[0m\n"
-              );
-
-        if (scanf("%d", &callNumber) != 1)
-        {
-            while (getchar() != '\n');
-            continue;
-        }
-
-        switch (callNumber)
-        {
-            case 0:
-                {
-                    structEnum_t valueToPush = 0;
-
-                    if(scanf(SPEC, &valueToPush) != 1)
-                        break;
-                    stackPush(stk, valueToPush);
-
-                    #ifdef STACK_DEBUG
-                        stackDump(stk);
-                    #endif
-                    break;
-                }
-
-            case 1:
-                printf("Last value = " SPEC "\n", stackPop(stk));
-                #ifdef STACK_DEBUG
-                    stackDump(stk);
-                #endif
-                break;
-
-            case 2:
-                flag = 0;
-                break;
-
-            default:
-                break;
-        }
-
-    }while(flag);
+    fprintf(fp, "}\n");
 
     return CORRECT;
 }
 
-bool compareDoubleWithDouble(structEnum_t value)
+bool compareDoubleWithDouble(const structEnum_t value1, const structEnum_t value2)
 {
-    if (isnan(_POISON))
+    if (isnan(value1) || isnan(value2))
     {
-        if (isnan(value))
+        if (isnan(value1) && isnan(value2))
             return 1;
         else
             return 0;
     }
     else
     {
-        if (fabs(value - _POISON) < EPS)
+        if (fabs(value1 - value2) < EPS)
             return 1;
     }
 
@@ -201,11 +153,11 @@ bool compareDoubleWithDouble(structEnum_t value)
 
 error stackDestroy(stack_t *stk)
 {
-    STACK_VERIFY(stk, POINTER_CHECK);
+    printStackVerify(stk, stackVerify(stk, ESSENTIAL_CHECK));
 
     for (size_t i = 0; i < stk->capacity; i++)
     {
-        stk->data[i] = _POISON;
+        stk->data[i] = poison;
     }
 
     free(stk->data);
@@ -221,4 +173,186 @@ error stackDestroy(stack_t *stk)
     #endif
 
     return CORRECT;
+}
+
+error fileOpening(FILE **fp)
+{
+    if ((*fp = fopen("errors.log", "a")) == NULL)
+    {
+        return FILE_ERROR;
+    }
+
+    return CORRECT;
+}
+
+error closeFile(FILE **fp)
+{
+    if (fclose(*fp) == EOF)
+    {
+        return FILE_ERROR;
+    }
+
+    return CORRECT;
+}
+
+error stackVerify(stack_t *stk, check flag)
+{
+    switch (flag)
+    {
+        case ESSENTIAL_CHECK:
+            if (stk == NULL)
+            {
+                return INCORRECT_POINTER;
+            }
+
+            if (stk->data == NULL || stk->pointer == NULL ||
+                MAX - stk->size < MAX / 2 || MAX - stk->capacity < MAX / 2)
+            {
+                return INITIALIZATION_ERROR;
+            }
+
+            if (!compareDoubleWithDouble(stk->pointer[0], canary1) ||
+                !compareDoubleWithDouble(stk->pointer[stk->capacity + 1], canary2) ||
+                !compareDoubleWithDouble(stk->stuctCanary1, canary3) ||
+                !compareDoubleWithDouble(stk->stuctCanary2, canary4))
+            {
+                return CANARY_DEAD;
+            }
+
+            break;
+
+        case ZERO_STACK_CHECK:
+        {
+            int poisonFlag = 0;
+            for (size_t i = 0; i < stk->capacity; i++)
+            {
+                if (!compareDoubleWithDouble(stk->data[i], poison))
+                {
+                    poisonFlag = 1;
+                    break;
+                }
+            }
+            if (stk->size != 0 || stk->capacity != 0 || poisonFlag)
+            {
+                return ZERO_STACK;
+            }
+
+            break;
+        }
+
+        case ALLOCATION_CHECK:
+            if(stk->pointer == NULL)
+            {
+                return ALLOCATION_ERROR;
+            }
+
+            break;
+
+        #ifdef STACK_DEBUG
+            case FILE_INFO_CHECK:
+                if (stk->functionName == NULL || stk->fileName == NULL || stk->line <= 0)
+                {
+                    return FILE_INFO_ERROR;
+                }
+
+                break;
+        #endif
+
+        case IS_POP_POSSIBLE:
+            if (stk->size <= 0 || stk->capacity < stk->size || stk->capacity <= 0)
+            {
+                return POP_NOT_POSSIBLE;
+            }
+
+            break;
+
+        default:
+            return INCORRECT_FLAG;
+
+            break;
+    }
+
+    return CORRECT;
+}
+
+void printStackVerify(stack_t *stk, error flag)
+{
+    FILE *filepointer;
+    fileOpening(&filepointer);
+
+    if (flag)
+        stackDump(stk, filepointer);
+
+    switch (flag)
+    {
+        case CORRECT:
+
+            break;
+
+        case ZERO_STACK:
+
+            fprintf(filepointer, "The stack was created incorrectly\n");
+
+            abort();
+
+            break;
+
+        case ALLOCATION_ERROR:
+
+            fprintf(filepointer, "Memory allocation error\n");
+
+            break;
+
+        case INCORRECT_POINTER:
+
+            fprintf(filepointer, "A null pointer was passed\n");
+
+            abort();
+
+            break;
+
+        case INITIALIZATION_ERROR:
+
+            fprintf(filepointer, "An incorrectly constructed test was submitted\n");
+
+            break;
+
+        case INCORRECT_FLAG:
+
+            fprintf(filepointer, "Transferred incorrect flag\n");
+
+            abort();
+
+            break;
+
+        case POP_NOT_POSSIBLE:
+
+            fprintf(filepointer, "The function cannot be called\n");
+
+            break;
+
+        case CANARY_DEAD:
+
+            fprintf(filepointer, "One of canaries dead\n");
+
+            abort();
+
+        case FILE_INFO_ERROR:
+
+            fprintf(filepointer, "Initialization did not complete correctly\n");
+
+            break;
+
+        case FILE_ERROR:
+
+            fprintf(filepointer, "Failed to open/close file\n");
+
+            break;
+
+        default:
+
+            break;
+    }
+
+    closeFile(&filepointer);
 }
