@@ -1,7 +1,7 @@
 typedef double structEnum_t;
 #define SPEC "%lg"
 
-#define STACK_DEBUG
+//#define STACK_DEBUG
 
 #ifdef STACK_DEBUG
     #define ON_DBG(...) __VA_ARGS__
@@ -12,16 +12,16 @@ typedef double structEnum_t;
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
 
 const structEnum_t poison = NAN;
 const double EPS = 1e-5;
 const size_t MAX = -1;
-const size_t HASH = 5381;
 
 const structEnum_t canary1 = (const structEnum_t)0xEDA;
 const structEnum_t canary2 = (const structEnum_t)0xBEDA;
 const structEnum_t canary3 = (const structEnum_t)0xE1DADEDA;
-const structEnum_t canary4 = (const structEnum_t)0xEBA1DEDA;
+const structEnum_t canary4 = (const structEnum_t)0xBEDADEDA;
 
 enum error
 {
@@ -34,7 +34,8 @@ enum error
     POP_NOT_POSSIBLE = -6,
     CANARY_DEAD = -7,
     FILE_INFO_ERROR = -8,
-    FILE_ERROR = -9
+    FILE_ERROR = -9,
+    HASH_ERROR = -10
 };
 
 enum check
@@ -43,7 +44,8 @@ enum check
     ALLOCATION_CHECK,
     ESSENTIAL_CHECK,
     IS_POP_POSSIBLE,
-    FILE_INFO_CHECK
+    FILE_INFO_CHECK,
+    HASH_CHECK
 };
 
 struct stack_t
@@ -54,6 +56,7 @@ struct stack_t
     size_t size;
     size_t capacity;
     ON_DBG(const char *functionName; const char *fileName; int line;)
+    uint64_t hash;
     structEnum_t stuctCanary2;
 };
 
@@ -69,4 +72,4 @@ error stackDestroy(stack_t *stk);
 error fileOpening(FILE **fp);
 error closeFile(FILE **fp);
 void printStackVerify(stack_t *stk, error flag);
-error recount(stack_t *stk);
+uint64_t recountHash(stack_t *stk);

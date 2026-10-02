@@ -3,17 +3,14 @@
 error stackInit(stack_t *stk, size_t initialCapacity
               ON_DBG(,const char *functionNameRet, const char *fileNameRet, int lineNumber))
 {
-    if (stk == NULL)
-    {
-        return INCORRECT_POINTER;
-    }
+    printStackVerify(stk, CORRECT);
 
-    if (MAX - initialCapacity < initialCapacity / 2)
+    if (MAX - initialCapacity < initialCapacity / 2)//TODO - плохая строчка по сути
     {
         return INITIALIZATION_ERROR;
     }
 
-    #ifdef STACK_DEBUG
+    #ifdef ON_DBG
         stk->functionName = functionNameRet;
         stk->fileName = fileNameRet;
         stk->line = lineNumber;
@@ -24,7 +21,7 @@ error stackInit(stack_t *stk, size_t initialCapacity
 
     printStackVerify(stk, stackVerify(stk, ALLOCATION_CHECK));
 
-    stk->data = &(stk->pointer[1]);
+    stk->data = &stk->pointer[1];
 
     printStackVerify(stk, stackVerify(stk, ZERO_STACK_CHECK));
 
@@ -40,30 +37,40 @@ error stackInit(stack_t *stk, size_t initialCapacity
         stk->data[i] = poison;
     }
 
+    stk->hash = recountHash(stk);
+
+    printf("%lu\n", stk->hash);
+
     return CORRECT;
 }
 
 error stackPush(stack_t *stk, structEnum_t value)
 {
     printStackVerify(stk, stackVerify(stk, ESSENTIAL_CHECK));
+    printStackVerify(stk, stackVerify(stk, HASH_CHECK));
 
     if (stk->size >= stk->capacity)
     {
-        recalloc(stk, stk->capacity * 2);
+        recalloc(stk, stk->capacity * 2);//TODO - переименовать
     }
 
     printStackVerify(stk, stackVerify(stk, ALLOCATION_CHECK));
 
     (stk->data)[(stk->size)++] = value;
+    stk->hash = recountHash(stk);
 
     return CORRECT;
 }
 
 structEnum_t stackPop(stack_t *stk)
-{//TODO - printStackVerify
-    if (stackVerify(stk, ALLOCATION_CHECK) != CORRECT ||
-        stackVerify(stk, IS_POP_POSSIBLE) != CORRECT)
+{
+    printStackVerify(stk, stackVerify(stk, ESSENTIAL_CHECK));
+    printStackVerify(stk, stackVerify(stk, HASH_CHECK));
+
+    if (stackVerify(stk, IS_POP_POSSIBLE) != CORRECT)
     {
+        printStackVerify(stk, POP_NOT_POSSIBLE);
+
         return poison;
     }
 
@@ -76,6 +83,8 @@ structEnum_t stackPop(stack_t *stk)
         recalloc(stk, stk->capacity / 2);
     }
 
+    stk->hash = recountHash(stk);
+
     return value;
 }
 
@@ -84,7 +93,8 @@ error recalloc(stack_t *stk, size_t newCapacity)
     printStackVerify(stk, stackVerify(stk, ESSENTIAL_CHECK));
 
     if (newCapacity == 0) newCapacity = 1;
-    structEnum_t *newStk = (structEnum_t*)realloc(stk->pointer, (newCapacity + 2) * sizeof(structEnum_t));
+    structEnum_t *newStk = (structEnum_t*)realloc(stk->pointer,
+                            (newCapacity + 2) * sizeof(structEnum_t));
 
     stk->pointer = newStk;
 
@@ -109,21 +119,22 @@ error recalloc(stack_t *stk, size_t newCapacity)
 
 error stackDump(stack_t *stk, FILE *fp)
 {
+    printStackVerify(stk, stackVerify(stk, ESSENTIAL_CHECK));
 
     #ifdef STACK_DEBUG
-        fprintf(fp, "stack \"stk1\" [0x%p] created by %s() %s :%d\n{\n",
+        fprintf(fp, "stack \"stk1\" [%p] created by %s() %s :%d\n{\n",
                stk->data, stk->functionName, stk->fileName, stk->line);
     #endif
 
-    fprintf(fp, "    capacity = %d\n    size = %d\n    data = [0x%p]\n       {\n",
+    fprintf(fp, "    capacity = %d\n    size = %d\n    data = [%p]\n       {\n",
            stk->capacity, stk->size, stk->data);
 
     for (size_t i = 0; i < stk->capacity; i++)
     {
-        if (i < stk->size) fprintf(fp, "            *[%u] = " SPEC, i, stk->data[i]);
-        else fprintf(fp, "             [%u] = " SPEC, i, stk->data[i]);
+        if (i < stk->size) fprintf(fp, "            *[%u] = " SPEC "\n", i, stk->data[i]);
+        else fprintf(fp, "             [%u] = " SPEC "\n", i, stk->data[i]);
 
-        if (compareDoubleWithDouble(stk->data[i], poison)) printf(" (POISON)\n");
+        if (compareDoubleWithDouble(stk->data[i], poison)) fprintf(fp, " (POISON)\n");
         else fprintf(fp, "\n");
     }
     fprintf(fp, "       }\n");
@@ -134,7 +145,7 @@ error stackDump(stack_t *stk, FILE *fp)
 }
 
 bool compareDoubleWithDouble(const structEnum_t value1, const structEnum_t value2)
-{
+{//TODO - привести указатель к указателю на uint64_t
     if (isnan(value1) || isnan(value2))
     {
         if (isnan(value1) && isnan(value2))
@@ -199,6 +210,14 @@ error stackVerify(stack_t *stk, check flag)
 {
     switch (flag)
     {
+        if (!compareDoubleWithDouble(stk->pointer[0], canary1) ||
+            !compareDoubleWithDouble(stk->pointer[stk->capacity + 1], canary2) ||
+            !compareDoubleWithDouble(stk->stuctCanary1, canary3) ||
+            !compareDoubleWithDouble(stk->stuctCanary2, canary4))
+        {
+            return CANARY_DEAD;
+        }
+
         case ESSENTIAL_CHECK:
             if (stk == NULL)
             {
@@ -211,13 +230,6 @@ error stackVerify(stack_t *stk, check flag)
                 return INITIALIZATION_ERROR;
             }
 
-            if (!compareDoubleWithDouble(stk->pointer[0], canary1) ||
-                !compareDoubleWithDouble(stk->pointer[stk->capacity + 1], canary2) ||
-                !compareDoubleWithDouble(stk->stuctCanary1, canary3) ||
-                !compareDoubleWithDouble(stk->stuctCanary2, canary4))
-            {
-                return CANARY_DEAD;
-            }
 
             break;
 
@@ -266,7 +278,15 @@ error stackVerify(stack_t *stk, check flag)
 
             break;
 
-        default:
+        case HASH_CHECK:
+            if (recountHash(stk) != stk->hash)
+            {
+                return HASH_ERROR;
+            }
+
+            break;
+
+        default://assert(0)
             return INCORRECT_FLAG;
 
             break;
@@ -279,6 +299,13 @@ void printStackVerify(stack_t *stk, error flag)
 {
     FILE *filepointer;
     fileOpening(&filepointer);
+
+    if (stk == NULL)
+    {
+        fprintf(filepointer, "The stack was created incorrectly\n");
+
+        abort();
+    }
 
     if (flag)
         stackDump(stk, filepointer);
@@ -349,10 +376,28 @@ void printStackVerify(stack_t *stk, error flag)
 
             break;
 
+        case HASH_ERROR:
+
+            fprintf(filepointer, "Incorrect modification of data on the stack\n");
+
+            abort();
+
         default:
 
             break;
     }
 
     closeFile(&filepointer);
+}
+
+uint64_t recountHash(stack_t *stk)
+{
+    uint64_t hash = 5381;
+
+    for (uint8_t i = 0; i < (stk->capacity + 2) * sizeof(structEnum_t); i++)
+    {
+        hash = ((hash << 5) + hash) + ((uint8_t*)(stk->pointer))[i];
+    }
+
+    return hash;
 }

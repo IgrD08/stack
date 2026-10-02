@@ -5,10 +5,12 @@ error printMenu(stack_t *stk);
 int main()
 {
     stack_t stk1 = {};
-    size_t initialCapacity = 2;
-
-    if(stackInit(&stk1, initialCapacity ON_DBG(,__func__, __FILE__, __LINE__)) != 0)
+    size_t initialCapacity = 10;
+//TODO - __func__, __FILE__, __LINE__ delete, макрос stackInit
+    if(stackInit(&stk1, initialCapacity ON_DBG(,__func__, __FILE__, __LINE__)) != CORRECT)
     {
+        printf("Invalid values passed\n");
+
         return 1;
     }
 
