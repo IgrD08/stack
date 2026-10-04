@@ -5,12 +5,12 @@ error stackInit(stack_t *stk, size_t initialCapacity
 {
     printStackVerify(stk, CORRECT);
 
-    if (MAX - initialCapacity < initialCapacity / 2)//TODO - плохая строчка по сути
+    if (initialCapacity  > MAX)
     {
         return INITIALIZATION_ERROR;
     }
 
-    #ifdef ON_DBG
+    #ifdef STACK_DEBUG
         stk->functionName = functionNameRet;
         stk->fileName = fileNameRet;
         stk->line = lineNumber;
@@ -39,8 +39,6 @@ error stackInit(stack_t *stk, size_t initialCapacity
 
     stk->hash = recountHash(stk);
 
-    printf("%lu\n", stk->hash);
-
     return CORRECT;
 }
 
@@ -51,7 +49,7 @@ error stackPush(stack_t *stk, structEnum_t value)
 
     if (stk->size >= stk->capacity)
     {
-        recalloc(stk, stk->capacity * 2);//TODO - переименовать
+        stackRecalloc(stk, stk->capacity * 2);
     }
 
     printStackVerify(stk, stackVerify(stk, ALLOCATION_CHECK));
@@ -80,7 +78,7 @@ structEnum_t stackPop(stack_t *stk)
 
     if (stk->size * 4 <= stk->capacity)
     {
-        recalloc(stk, stk->capacity / 2);
+        stackRecalloc(stk, stk->capacity / 2);
     }
 
     stk->hash = recountHash(stk);
@@ -88,7 +86,7 @@ structEnum_t stackPop(stack_t *stk)
     return value;
 }
 
-error recalloc(stack_t *stk, size_t newCapacity)
+error stackRecalloc(stack_t *stk, size_t newCapacity)
 {
     printStackVerify(stk, stackVerify(stk, ESSENTIAL_CHECK));
 
@@ -132,7 +130,7 @@ error stackDump(stack_t *stk, FILE *fp)
     for (size_t i = 0; i < stk->capacity; i++)
     {
         if (i < stk->size) fprintf(fp, "            *[%u] = " SPEC "\n", i, stk->data[i]);
-        else fprintf(fp, "             [%u] = " SPEC "\n", i, stk->data[i]);
+        else fprintf(fp, "             [%u] = " SPEC, i, stk->data[i]);
 
         if (compareDoubleWithDouble(stk->data[i], poison)) fprintf(fp, " (POISON)\n");
         else fprintf(fp, "\n");
@@ -145,7 +143,7 @@ error stackDump(stack_t *stk, FILE *fp)
 }
 
 bool compareDoubleWithDouble(const structEnum_t value1, const structEnum_t value2)
-{//TODO - привести указатель к указателю на uint64_t
+{
     if (isnan(value1) || isnan(value2))
     {
         if (isnan(value1) && isnan(value2))
@@ -155,7 +153,7 @@ bool compareDoubleWithDouble(const structEnum_t value1, const structEnum_t value
     }
     else
     {
-        if (fabs(value1 - value2) < EPS)
+        if (*(const uint64_t*)(&value1) == *(const uint64_t*)(&value2))
             return 1;
     }
 
@@ -225,7 +223,7 @@ error stackVerify(stack_t *stk, check flag)
             }
 
             if (stk->data == NULL || stk->pointer == NULL ||
-                MAX - stk->size < MAX / 2 || MAX - stk->capacity < MAX / 2)
+                stk->size > MAX || stk->capacity > MAX)
             {
                 return INITIALIZATION_ERROR;
             }
@@ -286,7 +284,7 @@ error stackVerify(stack_t *stk, check flag)
 
             break;
 
-        default://assert(0)
+        default://TODO - assert(0);
             return INCORRECT_FLAG;
 
             break;

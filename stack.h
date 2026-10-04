@@ -1,12 +1,19 @@
 typedef double structEnum_t;
 #define SPEC "%lg"
 
-//#define STACK_DEBUG
+#define STACK_DEBUG
 
 #ifdef STACK_DEBUG
     #define ON_DBG(...) __VA_ARGS__
 #else
     #define ON_DBG(...)
+#endif
+
+#ifdef STACK_DEBUG
+    #define STACK_INIT(STK, INITIAL_CAPACITY) stackInit(STK, INITIAL_CAPACITY \
+                       ON_DBG(,__func__, __FILE__, __LINE__))
+#else
+    #define STACK_INIT(STK, INITIAL_CAPACITY) stackInit(STK, INITIAL_CAPACITY)
 #endif
 
 #include <stdio.h>
@@ -16,7 +23,7 @@ typedef double structEnum_t;
 
 const structEnum_t poison = NAN;
 const double EPS = 1e-5;
-const size_t MAX = -1;
+const size_t MAX = (size_t)(-1) / 2;
 
 const structEnum_t canary1 = (const structEnum_t)0xEDA;
 const structEnum_t canary2 = (const structEnum_t)0xBEDA;
@@ -61,11 +68,11 @@ struct stack_t
 };
 
 error stackInit(stack_t *stk, size_t initialCapacity
-                ON_DBG(,const char *functionName, const char *fileName, int line));
+                ON_DBG(, const char *functionName, const char *fileName, int line));
 error stackPush(stack_t *stk, double value);
 structEnum_t stackPop(stack_t *stk);
 error stackVerify(stack_t *stk, check flag);
-error recalloc(stack_t *stk, size_t newCapacity);
+error stackRecalloc(stack_t *stk, size_t newCapacity);
 error stackDump(stack_t *stk, FILE *fp);
 bool compareDoubleWithDouble(const structEnum_t value1, const structEnum_t value2);
 error stackDestroy(stack_t *stk);
