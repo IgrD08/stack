@@ -5,8 +5,8 @@ error printMenu(stack_t *stk);
 int main()
 {
     stack_t stk1 = {};
-    size_t initialCapacity = 10;
-    
+    size_t initialCapacity = 1;
+
     if(STACK_INIT(&stk1, initialCapacity) != CORRECT)
     {
         printf("Invalid values passed\n");
@@ -23,7 +23,7 @@ int main()
 
 error printMenu(stack_t *stk)
 {
-    printStackVerify(stk, stackVerify(stk, ESSENTIAL_CHECK));
+    printStackVerify(stk, stackVerify(stk));
     bool flag = 1;
     int callNumber = 0;
 

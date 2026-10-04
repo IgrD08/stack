@@ -45,16 +45,6 @@ enum error
     HASH_ERROR = -10
 };
 
-enum check
-{
-    ZERO_STACK_CHECK,
-    ALLOCATION_CHECK,
-    ESSENTIAL_CHECK,
-    IS_POP_POSSIBLE,
-    FILE_INFO_CHECK,
-    HASH_CHECK
-};
-
 struct stack_t
 {
     structEnum_t stuctCanary1;
@@ -71,12 +61,23 @@ error stackInit(stack_t *stk, size_t initialCapacity
                 ON_DBG(, const char *functionName, const char *fileName, int line));
 error stackPush(stack_t *stk, double value);
 structEnum_t stackPop(stack_t *stk);
-error stackVerify(stack_t *stk, check flag);
 error stackRecalloc(stack_t *stk, size_t newCapacity);
-error stackDump(stack_t *stk, FILE *fp);
 bool compareDoubleWithDouble(const structEnum_t value1, const structEnum_t value2);
+uint64_t recountHash(stack_t *stk);
 error stackDestroy(stack_t *stk);
+
+error stackVerify(stack_t *stk);
+error essentialCheck(stack_t *stk);
+error hashCheck(stack_t *stk);
+error canaryCheck(stack_t *stk);
+error popPossibleCheck(stack_t *stk);
+#ifdef STACK_DEBUG
+    error fileInfoCheck(stack_t *stk);
+#endif
+error zeroStackCheck(stack_t *stk);
+error allocationCheck(stack_t *stk);
+
+error stackDump(stack_t *stk, FILE *fp);
 error fileOpening(FILE **fp);
 error closeFile(FILE **fp);
 void printStackVerify(stack_t *stk, error flag);
-uint64_t recountHash(stack_t *stk);
