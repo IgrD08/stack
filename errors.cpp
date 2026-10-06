@@ -6,7 +6,7 @@ error stackVerify(stack_t *stk)
 
     if ((flag = essentialCheck(stk)) != CORRECT) return flag;
 
-    if ((flag = allocationCheck(stk)) != CORRECT) return flag;
+    if ((flag = allocationCheck(stk->pointer)) != CORRECT) return flag;
 
     if ((flag = hashCheck(stk)) != CORRECT) return flag;
 
@@ -46,10 +46,10 @@ error hashCheck(stack_t *stk)
 
 error canaryCheck(stack_t *stk)
 {
-    if (!compareDoubleWithDouble(stk->pointer[0], canary1) ||
-        !compareDoubleWithDouble(stk->pointer[stk->capacity + 1], canary2) ||
-        !compareDoubleWithDouble(stk->stuctCanary1, canary3) ||
-        !compareDoubleWithDouble(stk->stuctCanary2, canary4))
+    if (!compareValues(stk->pointer[0], canary1) ||
+        !compareValues(stk->pointer[stk->capacity + 1], canary2) ||
+        !compareValues(stk->stuctCanary1, canary3) ||
+        !compareValues(stk->stuctCanary2, canary4))
     {
         return CANARY_DEAD;
     }
@@ -59,7 +59,7 @@ error canaryCheck(stack_t *stk)
 
 error popPossibleCheck(stack_t *stk)
 {
-    if (stk->size <= 0 || stk->capacity < stk->size || stk->capacity <= 0)
+    if (stk->size == 0 || stk->capacity < stk->size || stk->capacity == 0)
     {
         return POP_NOT_POSSIBLE;
     }
@@ -81,16 +81,7 @@ error popPossibleCheck(stack_t *stk)
 
 error zeroStackCheck(stack_t *stk)
 {
-    int poisonFlag = 0;
-    for (size_t i = 0; i < stk->capacity; i++)
-    {
-        if (!compareDoubleWithDouble(stk->data[i], poison))
-        {
-            poisonFlag = 1;
-            break;
-        }
-    }
-    if (stk->size != 0 || stk->capacity != 0 || poisonFlag)
+    if (stk->size != 0 || stk->capacity != 0)
     {
         return ZERO_STACK;
     }
@@ -98,9 +89,9 @@ error zeroStackCheck(stack_t *stk)
     return CORRECT;
 }
 
-error allocationCheck(stack_t *stk)
+error allocationCheck(structEnum_t *ptr)
 {
-    if (stk->pointer == NULL)
+    if (ptr == NULL)
     {
         return ALLOCATION_ERROR;
     }
@@ -108,104 +99,135 @@ error allocationCheck(stack_t *stk)
     return CORRECT;
 }
 
-void printStackVerify(stack_t *stk, error flag)
+returnStatus printStackVerify(stack_t *stk, error flag)
 {
-    FILE *filepointer;
-    fileOpening(&filepointer);
+    FILE *filepointer = NULL;
+
+    size_t fatalFlag = 0;
+
+    if (fileOpening(&filepointer) != CORRECT)
+    {
+        return ERROR_STATUS;
+    }
 
     if (stk == NULL)
     {
-        fprintf(filepointer, "The stack was created incorrectly\n");
+        fprintf(filepointer, "ERROR: The stack was created incorrectly\n");
 
-        abort();
+        if (closeFile(&filepointer) != CORRECT)
+        {
+            fatalFlag = 1;
+        }
     }
 
-    if (flag)
+    if (!fatalFlag)
+    {
+        switch (flag)
+        {
+            case CORRECT:
+
+                fatalFlag = 0;
+
+                break;
+
+            case ZERO_STACK:
+
+                fprintf(filepointer, "ERROR: The stack was created incorrectly\n");
+
+                fatalFlag = 1;
+
+                break;
+
+            case ALLOCATION_ERROR:
+
+                fprintf(filepointer, "ERROR: Memory allocation error\n");
+
+                fatalFlag = 2;
+
+                break;
+
+            case INCORRECT_POINTER:
+
+                fprintf(filepointer, "ERROR: A null pointer was passed\n");
+
+                fatalFlag = 1;
+
+                break;
+
+            case INITIALIZATION_ERROR:
+
+                fprintf(filepointer, "ERROR: An incorrectly constructed test was submitted\n");
+
+                fatalFlag = 1;
+
+                break;
+
+            case POP_NOT_POSSIBLE:
+
+                fprintf(filepointer, "ERROR: The function cannot be called\n");
+
+                fatalFlag = 2;
+
+                break;
+
+            case CANARY_DEAD:
+
+                fprintf(filepointer, "ERROR: One of canaries dead\n");
+
+                fatalFlag = 1;
+
+            case FILE_INFO_ERROR:
+
+                fprintf(filepointer, "ERROR: Initialization did not complete correctly\n");
+
+                fatalFlag = 2;
+
+                break;
+
+            case FILE_ERROR:
+
+                fprintf(filepointer, "ERROR: Failed to open/close file\n");
+
+                fatalFlag = 2;
+
+                break;
+
+            case HASH_ERROR:
+
+                fprintf(filepointer, "ERROR: Incorrect modification of data on the stack\n");
+
+                fatalFlag = 1;
+
+            default:
+
+                break;
+        }
+    }
+
+    if (fatalFlag == 1)
+    {
+    printf("5\n");
+        return ERROR_STATUS;
+    }
+
+    if (fatalFlag == 2)
+    {
         stackDump(stk, filepointer);
 
-    switch (flag)
-    {
-        case CORRECT:
-
-            break;
-
-        case ZERO_STACK:
-
-            fprintf(filepointer, "The stack was created incorrectly\n");
-
-            abort();
-
-            break;
-
-        case ALLOCATION_ERROR:
-
-            fprintf(filepointer, "Memory allocation error\n");
-
-            break;
-
-        case INCORRECT_POINTER:
-
-            fprintf(filepointer, "A null pointer was passed\n");
-
-            abort();
-
-            break;
-
-        case INITIALIZATION_ERROR:
-
-            fprintf(filepointer, "An incorrectly constructed test was submitted\n");
-
-            break;
-
-        case INCORRECT_FLAG:
-
-            fprintf(filepointer, "Transferred incorrect flag\n");
-
-            abort();
-
-            break;
-
-        case POP_NOT_POSSIBLE:
-
-            fprintf(filepointer, "The function cannot be called\n");
-
-            break;
-
-        case CANARY_DEAD:
-
-            fprintf(filepointer, "One of canaries dead\n");
-
-            abort();
-
-        case FILE_INFO_ERROR:
-
-            fprintf(filepointer, "Initialization did not complete correctly\n");
-
-            break;
-
-        case FILE_ERROR:
-
-            fprintf(filepointer, "Failed to open/close file\n");
-
-            break;
-
-        case HASH_ERROR:
-
-            fprintf(filepointer, "Incorrect modification of data on the stack\n");
-
-            abort();
-
-        default:
-
-            break;
+        return ERROR_STATUS;
     }
 
-    closeFile(&filepointer);
+    if (closeFile(&filepointer) != CORRECT)
+    {
+        return ERROR_STATUS;
+    }
+
+    return NORMAL_STATUS;
 }
 
 error fileOpening(FILE **fp)
 {
-    if ((*fp = fopen("errors.log", "a")) == NULL)
+    if ((*fp = fopen(ERRORS_FILE, "a")) == NULL)
     {
         return FILE_ERROR;
     }

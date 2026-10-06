@@ -1,18 +1,20 @@
 #include "stack.h"
 
-error printMenu(stack_t *stk);
+returnStatus printMenu(stack_t *stk);
 
 int main()
 {
     stack_t stk1 = {};
-    size_t initialCapacity = 1;
+    size_t initialCapacity = 10;
 
-    if(STACK_INIT(&stk1, initialCapacity) != CORRECT)
+    if (STACK_INIT(&stk1, initialCapacity) != CORRECT)
     {
         printf("Invalid values passed\n");
 
         return 1;
     }
+
+    //memset(&stk1, -1, sizeof(stk1));
 
     printMenu(&stk1);
 
@@ -21,9 +23,13 @@ int main()
     return 0;
 }
 
-error printMenu(stack_t *stk)
+returnStatus printMenu(stack_t *stk)
 {
-    printStackVerify(stk, stackVerify(stk));
+    if (printStackVerify(stk, stackVerify(stk)) == ERROR_STATUS)
+    {
+        return ERROR_STATUS;
+    }
+
     bool flag = 1;
     int callNumber = 0;
 
@@ -47,7 +53,7 @@ error printMenu(stack_t *stk)
                 {
                     structEnum_t valueToPush = 0;
 
-                    if(scanf(SPEC, &valueToPush) != 1)
+                    if (scanf(SPEC, &valueToPush) != 1)
                         break;
                     stackPush(stk, valueToPush);
 
@@ -71,7 +77,7 @@ error printMenu(stack_t *stk)
 
     }while(flag);
 
-    return CORRECT;
+    return NORMAL_STATUS;
 }
 
 

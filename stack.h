@@ -1,3 +1,6 @@
+#ifndef STACK_H
+#define STACK_H
+
 typedef double structEnum_t;
 #define SPEC "%lg"
 
@@ -20,10 +23,11 @@ typedef double structEnum_t;
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
-const structEnum_t poison = NAN;
-const double EPS = 1e-5;
+const structEnum_t POISON = NAN;
 const size_t MAX = (size_t)(-1) / 2;
+const char ERRORS_FILE[] = "errors.log";
 
 const structEnum_t canary1 = (const structEnum_t)0xEDA;
 const structEnum_t canary2 = (const structEnum_t)0xBEDA;
@@ -37,12 +41,17 @@ enum error
     ALLOCATION_ERROR = -2,
     INCORRECT_POINTER = -3,
     INITIALIZATION_ERROR = -4,
-    INCORRECT_FLAG = -5,
-    POP_NOT_POSSIBLE = -6,
-    CANARY_DEAD = -7,
-    FILE_INFO_ERROR = -8,
-    FILE_ERROR = -9,
-    HASH_ERROR = -10
+    POP_NOT_POSSIBLE = -5,
+    CANARY_DEAD = -6,
+    FILE_INFO_ERROR = -7,
+    FILE_ERROR = -8,
+    HASH_ERROR = -9
+};
+
+enum returnStatus
+{
+    NORMAL_STATUS = 0,
+    ERROR_STATUS = 1
 };
 
 struct stack_t
@@ -57,14 +66,14 @@ struct stack_t
     structEnum_t stuctCanary2;
 };
 
-error stackInit(stack_t *stk, size_t initialCapacity
+returnStatus stackInit(stack_t *stk, size_t initialCapacity
                 ON_DBG(, const char *functionName, const char *fileName, int line));
-error stackPush(stack_t *stk, double value);
+returnStatus stackPush(stack_t *stk, double value);
 structEnum_t stackPop(stack_t *stk);
-error stackRecalloc(stack_t *stk, size_t newCapacity);
-bool compareDoubleWithDouble(const structEnum_t value1, const structEnum_t value2);
+returnStatus stackRecalloc(stack_t *stk, size_t newCapacity);
+bool compareValues(const structEnum_t value1, const structEnum_t value2);
 uint64_t recountHash(stack_t *stk);
-error stackDestroy(stack_t *stk);
+returnStatus stackDestroy(stack_t *stk);
 
 error stackVerify(stack_t *stk);
 error essentialCheck(stack_t *stk);
@@ -75,9 +84,11 @@ error popPossibleCheck(stack_t *stk);
     error fileInfoCheck(stack_t *stk);
 #endif
 error zeroStackCheck(stack_t *stk);
-error allocationCheck(stack_t *stk);
+error allocationCheck(structEnum_t *ptr);
 
-error stackDump(stack_t *stk, FILE *fp);
+returnStatus stackDump(stack_t *stk, FILE *fp);
 error fileOpening(FILE **fp);
 error closeFile(FILE **fp);
-void printStackVerify(stack_t *stk, error flag);
+returnStatus printStackVerify(stack_t *stk, error flag);
+
+#endif
