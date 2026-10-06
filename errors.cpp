@@ -195,7 +195,7 @@ returnStatus printStackVerify(stack_t *stk, error flag)
 
             case FILE_ERROR:
 
-                fprintf(filepointer, "ERROR: Failed to open/close file\n");
+                fprintf(stderr, "ERROR: Failed to open/close file\n");
 
                 fatalFlag = 2;
 
