@@ -7,7 +7,7 @@ int main()
     stack_t stk1 = {};
     size_t initialCapacity = 10;
 
-    if (STACK_INIT(&stk1, initialCapacity) != CORRECT)
+    if (STACK_INIT(&stk1, initialCapacity) != NORMAL_STATUS)
     {
         printf("Invalid values passed\n");
 

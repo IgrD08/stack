@@ -24,6 +24,7 @@ typedef double structEnum_t;
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
+#include <windows.h>
 
 const structEnum_t POISON = NAN;
 const size_t MAX = (size_t)(-1) / 2;

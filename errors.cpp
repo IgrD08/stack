@@ -26,6 +26,15 @@ error essentialCheck(stack_t *stk)
          return INCORRECT_POINTER;
     }
 
+    MEMORY_BASIC_INFORMATION mbi;
+    if (VirtualQuery(stk, &mbi, sizeof(mbi)) == 0 ||
+        mbi.State != MEM_COMMIT ||
+        (mbi.Protect & PAGE_NOACCESS) ||
+        (mbi.Protect & PAGE_GUARD))
+    {
+        return INCORRECT_POINTER;
+    }
+
     if (stk->data == NULL || stk->size > MAX || stk->capacity > MAX)
     {
         return INITIALIZATION_ERROR;
@@ -206,7 +215,6 @@ returnStatus printStackVerify(stack_t *stk, error flag)
 
     if (fatalFlag == 1)
     {
-    printf("5\n");
         return ERROR_STATUS;
     }
 
