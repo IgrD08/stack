@@ -26,7 +26,7 @@ error essentialCheck(stack_t *stk)
          return INCORRECT_POINTER;
     }
 
-    MEMORY_BASIC_INFORMATION mbi;
+    MEMORY_BASIC_INFORMATION mbi;//TODO что делает
     if (VirtualQuery(stk, &mbi, sizeof(mbi)) == 0 ||
         mbi.State != MEM_COMMIT ||
         (mbi.Protect & PAGE_NOACCESS) ||

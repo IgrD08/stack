@@ -69,7 +69,7 @@ struct stack_t
 
 returnStatus stackInit(stack_t *stk, size_t initialCapacity
                 ON_DBG(, const char *functionName, const char *fileName, int line));
-returnStatus stackPush(stack_t *stk, double value);
+returnStatus stackPush(stack_t *stk, structEnum_t value);
 structEnum_t stackPop(stack_t *stk);
 returnStatus stackRecalloc(stack_t *stk, size_t newCapacity);
 bool compareValues(const structEnum_t value1, const structEnum_t value2);
