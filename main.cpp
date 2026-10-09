@@ -13,7 +13,6 @@ int main()
 
         return 1;
     }
-
     //memset(&stk1, -1, sizeof(stk1));
 
     printMenu(&stk1);
@@ -29,7 +28,7 @@ returnStatus printMenu(stack_t *stk)
     {
         return ERROR_STATUS;
     }
-
+printf("52\n");
     bool flag = 1;
     int callNumber = 0;
 

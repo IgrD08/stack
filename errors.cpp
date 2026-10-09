@@ -27,10 +27,10 @@ error essentialCheck(stack_t *stk)
     }
 
     MEMORY_BASIC_INFORMATION mbi;//TODO что делает
-    if (VirtualQuery(stk, &mbi, sizeof(mbi)) == 0 ||
-        mbi.State != MEM_COMMIT ||
-        (mbi.Protect & PAGE_NOACCESS) ||
-        (mbi.Protect & PAGE_GUARD))
+    if (VirtualQuery(stk, &mbi, sizeof(mbi)) == 0 || // 0 если в виндовс нет такого адреса
+        mbi.State != MEM_COMMIT || //память физически выделена и готова к работе
+        (mbi.Protect & PAGE_NOACCESS) || // память выделена, но системе жестко запрещено её читать
+        (mbi.Protect & PAGE_GUARD)) //страницы использующиеся операционной системой
     {
         return INCORRECT_POINTER;
     }

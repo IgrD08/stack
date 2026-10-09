@@ -42,6 +42,7 @@ returnStatus stackInit(stack_t *stk, size_t initialCapacity
 
     for (size_t i = 0; i < initialCapacity; i++)
     {
+
         stk->data[i] = POISON;
     }
 
@@ -49,7 +50,6 @@ returnStatus stackInit(stack_t *stk, size_t initialCapacity
     stk->pointer[initialCapacity + 1] = canary2;
     stk->stuctCanary1 = canary3;
     stk->stuctCanary2 = canary4;
-
     stk->hash = recountHash(stk);
 
     return NORMAL_STATUS;
@@ -142,7 +142,7 @@ returnStatus stackDump(stack_t *stk, FILE *fp)
 {
     #ifdef STACK_DEBUG
         fprintf(fp, "stack \"stk1\" [%p] created by %s() %s :%d\n{\n",
-               stk->data, stk->functionName, stk->fileName, stk->line);
+               stk, stk->functionName, stk->fileName, stk->line);
     #endif
 
     fprintf(fp, "\tcapacity = %ld\n\tsize = %ld\n\tdata = [%p]\n\t{\n",
@@ -164,11 +164,23 @@ returnStatus stackDump(stack_t *stk, FILE *fp)
     return NORMAL_STATUS;
 }
 
-bool compareValues(const structEnum_t value1, const structEnum_t value2)
+bool compareValues(const structEnum_t value1, const structEnum_t value2)// если нужна обработка всех типов добавить
 {
-    if (*(const uint64_t*)(&value1) == *(const uint64_t*)(&value2))
-        return 1;
-
+    if (sizeof(structEnum_t) == 1)
+    {
+        if (*(const uint8_t*)(&value1) == *(const uint8_t*)(&value2))
+            return 1;
+    }
+    if (sizeof(structEnum_t) == 4)
+    {
+        if (*(const uint32_t*)(&value1) == *(const uint32_t*)(&value2))
+            return 1;
+    }
+    if (sizeof(structEnum_t) == 8)
+    {
+        if (*(const uint64_t*)(&value1) == *(const uint64_t*)(&value2))
+            return 1;
+    }
     return 0;
 }
 

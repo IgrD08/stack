@@ -1,8 +1,8 @@
 #ifndef STACK_H
 #define STACK_H
 
-typedef double structEnum_t;
-#define SPEC "%lg"
+typedef int structEnum_t;
+#define SPEC "%d"
 
 #define STACK_DEBUG
 
@@ -26,7 +26,7 @@ typedef double structEnum_t;
 #include <string.h>
 #include <windows.h>
 
-const structEnum_t POISON = NAN;
+const structEnum_t POISON = -67;
 const size_t MAX = (size_t)(-1) / 2;
 const char ERRORS_FILE[] = "errors.log";
 
