@@ -25,15 +25,16 @@ error essentialCheck(stack_t *stk)
     {
          return INCORRECT_POINTER;
     }
-
-    MEMORY_BASIC_INFORMATION mbi;//TODO что делает
-    if (VirtualQuery(stk, &mbi, sizeof(mbi)) == 0 || // 0 если в виндовс нет такого адреса
-        mbi.State != MEM_COMMIT || //память физически выделена и готова к работе
-        (mbi.Protect & PAGE_NOACCESS) || // память выделена, но системе жестко запрещено её читать
-        (mbi.Protect & PAGE_GUARD)) //страницы использующиеся операционной системой
-    {
-        return INCORRECT_POINTER;
-    }
+    #ifdef _WIN32
+        MEMORY_BASIC_INFORMATION mbi;//TODO что делает
+        if (VirtualQuery(stk, &mbi, sizeof(mbi)) == 0 || // 0 если в виндовс нет такого адреса
+            mbi.State != MEM_COMMIT || //память физически выделена и готова к работе
+            (mbi.Protect & PAGE_NOACCESS) || // память выделена, но системе жестко запрещено её читать
+            (mbi.Protect & PAGE_GUARD)) //страницы использующиеся операционной системой
+        {
+            return INCORRECT_POINTER;
+        }
+    #endif
 
     if (stk->data == NULL || stk->size > MAX || stk->capacity > MAX)
     {
