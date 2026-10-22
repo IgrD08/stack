@@ -24,16 +24,17 @@ typedef int structEnum_t;
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
-#include <windows.h>
+#ifdef _WIN32
+    #include <windows.h>
+#endif
 
 const structEnum_t POISON = -67;
 const size_t MAX = (size_t)(-1) / 2;
-const char ERRORS_FILE[] = "errors.log";
 
-const structEnum_t canary1 = (const structEnum_t)0xEDA;
-const structEnum_t canary2 = (const structEnum_t)0xBEDA;
-const structEnum_t canary3 = (const structEnum_t)0xE1DADEDA;
-const structEnum_t canary4 = (const structEnum_t)0xBEDADEDA;
+const structEnum_t canary1 = 0xEDA;
+const structEnum_t canary2 = 0xBEDA;
+const structEnum_t canary3 = (structEnum_t)0xE1DADEDA;
+const structEnum_t canary4 = (structEnum_t)0xBEDADEDA;
 
 enum error
 {
@@ -45,8 +46,7 @@ enum error
     POP_NOT_POSSIBLE = -5,
     CANARY_DEAD = -6,
     FILE_INFO_ERROR = -7,
-    FILE_ERROR = -8,
-    HASH_ERROR = -9
+    HASH_ERROR = -8
 };
 
 enum returnStatus
@@ -88,8 +88,10 @@ error zeroStackCheck(stack_t *stk);
 error allocationCheck(structEnum_t *ptr);
 
 returnStatus stackDump(stack_t *stk, FILE *fp);
-error fileOpening(FILE **fp);
-error closeFile(FILE **fp);
+bool fileOpening(FILE **fp, const char *fileName, const char *fileFlag);
+bool closeFile(FILE **fp);
+
+returnStatus logStackError(stack_t *stk, error flag);
 returnStatus printStackVerify(stack_t *stk, error flag);
 
 #endif
