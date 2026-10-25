@@ -24,10 +24,13 @@ int main()
 
 returnStatus printMenu(stack_t *stk)
 {
-    if (printStackVerify(stk, stackVerify(stk)) == ERROR_STATUS)
-    {
-        return ERROR_STATUS;
-    }
+    #ifdef STACK_DEBUG
+        if (printStackVerify(stk, stackVerify(stk)) == ERROR_STATUS)
+        {
+            return ERROR_STATUS;
+        }
+    #endif
+
     bool flag = 1;
     int callNumber = 0;
 
