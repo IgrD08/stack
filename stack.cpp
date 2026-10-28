@@ -31,7 +31,7 @@ returnStatus stackInit(stack_t *stk, size_t initialCapacity
         }
     #endif
 
-    stk->pointer = (structEnum_t*)calloc(initialCapacity + 2, sizeof(structEnum_t));
+    stk->pointer = (stackElem_t*)calloc(initialCapacity + 2, sizeof(stackElem_t));
 
     #ifdef STACK_DEBUG
         if (printStackVerify(stk, allocationCheck(stk->pointer)) == ERROR_STATUS)
@@ -63,7 +63,7 @@ returnStatus stackInit(stack_t *stk, size_t initialCapacity
     return NORMAL_STATUS;
 }
 
-returnStatus stackPush(stack_t *stk, structEnum_t value)
+returnStatus stackPush(stack_t *stk, stackElem_t value)
 {
     #ifdef STACK_DEBUG
         if (printStackVerify(stk, stackVerify(stk)) == ERROR_STATUS)
@@ -91,7 +91,7 @@ returnStatus stackPush(stack_t *stk, structEnum_t value)
     return NORMAL_STATUS;
 }
 
-structEnum_t stackPop(stack_t *stk)
+stackElem_t stackPop(stack_t *stk)
 {
     #ifdef STACK_DEBUG
         if (printStackVerify(stk, stackVerify(stk)) == ERROR_STATUS)
@@ -106,7 +106,7 @@ structEnum_t stackPop(stack_t *stk)
     #endif
 
     stk->size--;
-    structEnum_t value = (stk->data)[stk->size];
+    stackElem_t value = (stk->data)[stk->size];
     stk->data[stk->size] = POISON;
 
     if (stk->size * 4 <= stk->capacity)
@@ -129,8 +129,8 @@ structEnum_t stackPop(stack_t *stk)
 returnStatus stackRecalloc(stack_t *stk, size_t newCapacity)
 {
     if (newCapacity == 0) newCapacity = 1;
-    structEnum_t *newStk = (structEnum_t*)realloc(stk->pointer,
-                            (newCapacity + 2) * sizeof(structEnum_t));
+    stackElem_t *newStk = (stackElem_t*)realloc(stk->pointer,
+                            (newCapacity + 2) * sizeof(stackElem_t));
 
     #ifdef STACK_DEBUG
         if (printStackVerify(stk, allocationCheck(newStk)) == ERROR_STATUS)
@@ -186,19 +186,19 @@ returnStatus stackDump(stack_t *stk, FILE *fp)
     return NORMAL_STATUS;
 }
 
-bool compareValues(const structEnum_t value1, const structEnum_t value2)
+bool compareValues(const stackElem_t value1, const stackElem_t value2)
 {
-    if (sizeof(structEnum_t) == 1)
+    if (sizeof(stackElem_t) == 1)
     {
         if (*(const uint8_t*)(&value1) == *(const uint8_t*)(&value2))
             return 1;
     }
-    if (sizeof(structEnum_t) == 4)
+    if (sizeof(stackElem_t) == 4)
     {
         if (*(const uint32_t*)(&value1) == *(const uint32_t*)(&value2))
             return 1;
     }
-    if (sizeof(structEnum_t) == 8)
+    if (sizeof(stackElem_t) == 8)
     {
         if (*(const uint64_t*)(&value1) == *(const uint64_t*)(&value2))
             return 1;
@@ -241,7 +241,7 @@ returnStatus stackDestroy(stack_t *stk)
     {
         uint64_t hash = 5381;
 
-        for (size_t i = 0; i < (stk->capacity + 2) * sizeof(structEnum_t); i++)
+        for (size_t i = 0; i < (stk->capacity + 2) * sizeof(stackElem_t); i++)
         {
             hash = ((hash << 5) + hash) + ((uint8_t*)(stk->pointer))[i];
         }

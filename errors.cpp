@@ -104,7 +104,7 @@ error zeroStackCheck(stack_t *stk)
     return CORRECT;
 }
 
-error allocationCheck(structEnum_t *ptr)
+error allocationCheck(stackElem_t *ptr)
 {
     if (ptr == NULL)
     {

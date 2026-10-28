@@ -52,7 +52,7 @@ returnStatus printMenu(stack_t *stk)
         {
             case 0:
                 {
-                    structEnum_t valueToPush = 0;
+                    stackElem_t valueToPush = 0;
 
                     if (scanf(SPEC, &valueToPush) != 1)
                         break;
